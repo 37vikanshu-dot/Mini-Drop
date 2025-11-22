@@ -1,0 +1,5 @@
+reflex
+bcrypt
+passlib
+reflex-google-auth
+supabase
