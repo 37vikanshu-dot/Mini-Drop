@@ -70,6 +70,32 @@ app.add_page(
     route="/shop-owner/payouts",
     on_load=[AuthState.check_auth, ShopOwnerState.on_mount],
 )
+from app.pages.rider.dashboard import dashboard_page as rider_dashboard
+from app.pages.rider.orders import orders_page as rider_orders
+from app.pages.rider.deliveries import deliveries_page as rider_deliveries
+from app.pages.rider.earnings import earnings_page as rider_earnings
+from app.states.rider_state import RiderState
+
+app.add_page(
+    rider_dashboard,
+    route="/rider/dashboard",
+    on_load=[AuthState.check_auth, RiderState.on_mount],
+)
+app.add_page(
+    rider_orders,
+    route="/rider/orders",
+    on_load=[AuthState.check_auth, RiderState.on_mount],
+)
+app.add_page(
+    rider_deliveries,
+    route="/rider/deliveries",
+    on_load=[AuthState.check_auth, RiderState.on_mount],
+)
+app.add_page(
+    rider_earnings,
+    route="/rider/earnings",
+    on_load=[AuthState.check_auth, RiderState.on_mount],
+)
 from app.pages.admin.dashboard import dashboard_page as admin_dashboard
 from app.pages.admin.shops import shops_page
 from app.pages.admin.categories import categories_page

@@ -223,6 +223,99 @@ class DatabaseManager:
             logging.exception(f"Error updating order status: {e}")
             return False
 
+    async def get_available_orders(self) -> list[dict]:
+        """Get all orders that are ready for pickup."""
+        if not self.supabase:
+            return []
+        try:
+            response = (
+                self.supabase.table("orders")
+                .select("*, order_items(*)")
+                .eq("status", "Ready")
+                .order("created_at", desc=True)
+                .execute()
+            )
+            return response.data or []
+        except Exception as e:
+            logging.exception(f"Error fetching available orders: {e}")
+            return []
+
+    async def get_rider_orders(self, rider_id: str) -> list[dict]:
+        """Get orders assigned to a specific rider."""
+        if not self.supabase:
+            return []
+        try:
+            response = (
+                self.supabase.table("orders")
+                .select("*, order_items(*)")
+                .eq("rider_id", rider_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            return response.data or []
+        except Exception as e:
+            logging.exception(f"Error fetching rider orders: {e}")
+            return []
+
+    async def assign_order_to_rider(self, order_id: str, rider_id: str) -> bool:
+        """Assign an order to a rider and update status."""
+        if not self.supabase:
+            return False
+        try:
+            self.supabase.table("orders").update(
+                {"rider_id": rider_id, "status": "Out for Delivery"}
+            ).eq("id", order_id).execute()
+            return True
+        except Exception as e:
+            logging.exception(f"Error assigning order: {e}")
+            return False
+
+    async def get_rider_by_id(self, rider_id: str) -> dict | None:
+        """Get rider details by ID."""
+        if not self.supabase:
+            return None
+        try:
+            response = (
+                self.supabase.table("riders").select("*").eq("id", rider_id).execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logging.exception(f"Error fetching rider: {e}")
+            return None
+
+    async def update_rider_earnings(self, rider_id: str, amount: float) -> bool:
+        """Update rider earnings and completed orders count."""
+        if not self.supabase:
+            return False
+        try:
+            rider = await self.get_rider_by_id(rider_id)
+            if not rider:
+                return False
+            current_earnings = rider.get("earnings", 0.0)
+            current_completed = rider.get("completed_orders", 0)
+            updates = {
+                "earnings": current_earnings + amount,
+                "completed_orders": current_completed + 1,
+            }
+            self.supabase.table("riders").update(updates).eq("id", rider_id).execute()
+            return True
+        except Exception as e:
+            logging.exception(f"Error updating rider stats: {e}")
+            return False
+
+    async def toggle_rider_status(self, rider_id: str, status: str) -> bool:
+        """Update rider online/offline status."""
+        if not self.supabase:
+            return False
+        try:
+            self.supabase.table("riders").update({"status": status}).eq(
+                "id", rider_id
+            ).execute()
+            return True
+        except Exception as e:
+            logging.exception(f"Error updating rider status: {e}")
+            return False
+
     async def get_riders(self) -> list[dict]:
         """Get all riders from database."""
         if not self.supabase:

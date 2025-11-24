@@ -53,3 +53,16 @@ def protected_shop_owner(component: rx.Component) -> rx.Component:
         loading_screen(),
         rx.cond(AuthState.is_shop_owner, component, access_denied_message()),
     )
+
+
+def protected_rider(component: rx.Component) -> rx.Component:
+    """Restrict access to riders only."""
+    return rx.cond(
+        AuthState.is_checking_auth,
+        loading_screen(),
+        rx.cond(
+            AuthState.is_authenticated & AuthState.is_rider,
+            component,
+            access_denied_message(),
+        ),
+    )

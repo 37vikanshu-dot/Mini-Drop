@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_address TEXT,
     payment_method TEXT,
     shop_id INTEGER REFERENCES shops(id),
-    user_id TEXT,
+    status TEXT,
+    rider_id TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -138,6 +139,14 @@ CREATE TABLE IF NOT EXISTS payouts (
     payout_amount DECIMAL(10,2),
     status TEXT
 );
+
+-- Add columns if they don't exist (migrations)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'rider_id') THEN
+        ALTER TABLE orders ADD COLUMN rider_id TEXT;
+    END IF;
+END $$;
 """
 
 

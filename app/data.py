@@ -138,6 +138,15 @@ USERS: list[UserDict] = [
         "password_hash": hash_password("password123"),
         "shop_id": None,
     },
+    {
+        "id": "rider_r1",
+        "name": "Rahul Kumar",
+        "email": "rahul@minidrop.com",
+        "phone": "9876543210",
+        "role": "rider",
+        "password_hash": hash_password("password123"),
+        "shop_id": None,
+    },
 ]
 CATEGORIES: list[CategoryDict] = [
     {

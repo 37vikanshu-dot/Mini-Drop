@@ -36,6 +36,10 @@ class AuthState(GoogleAuthState):
     def is_shop_owner(self) -> bool:
         return self.user_role == "shop_owner"
 
+    @rx.var
+    def is_rider(self) -> bool:
+        return self.user_role == "rider"
+
     @rx.event
     def set_login_email(self, email: str):
         self.login_email = email
@@ -362,5 +366,7 @@ class AuthState(GoogleAuthState):
             return rx.redirect("/admin/dashboard")
         elif role == "shop_owner":
             return rx.redirect("/shop-owner/dashboard")
+        elif role == "rider":
+            return rx.redirect("/rider/dashboard")
         else:
             return rx.redirect("/")
