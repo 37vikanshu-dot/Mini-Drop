@@ -1,6 +1,52 @@
 import reflex as rx
 from app.components.layout import layout
 from app.states.main_state import AppState
+from app.states.payment_state import PaymentState
+
+RAZORPAY_SCRIPT = """
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function handlePayment(orderId, amount, keyId) {
+    var options = {
+        "key": keyId,
+        "amount": amount * 100,
+        "currency": "INR",
+        "name": "Mini Drop",
+        "description": "Hyperlocal Delivery",
+        "image": "https://api.dicebear.com/9.x/notionists/svg?seed=MiniDrop",
+        "order_id": orderId,
+        "handler": function (response){
+            // Call backend verification
+            // We trigger the event handler defined in PaymentState
+            reflex.sendEvent("app.states.payment_state.PaymentState.verify_payment", 
+                {payment_id: response.razorpay_payment_id, 
+                 order_id: response.razorpay_order_id, 
+                 signature: response.razorpay_signature}
+            );
+        },
+        "prefill": {
+            "name": "Mini Drop User",
+            "email": "user@minidrop.com",
+            "contact": "9999999999"
+        },
+        "theme": {
+            "color": "#6200EA"
+        },
+        "modal": {
+            "ondismiss": function(){
+                reflex.sendEvent("app.states.payment_state.PaymentState.payment_failed");
+            }
+        }
+    };
+    var rzp1 = new Razorpay(options);
+    rzp1.open();
+
+    rzp1.on('payment.failed', function (response){
+        reflex.sendEvent("app.states.payment_state.PaymentState.payment_failed");
+    });
+}
+</script>
+"""
 
 
 def address_card(address: dict) -> rx.Component:
@@ -94,6 +140,20 @@ def checkout_page() -> rx.Component:
                             "Order Summary",
                             class_name="text-sm font-bold text-gray-900 mb-4",
                         ),
+                        rx.cond(
+                            AppState.applied_coupon,
+                            rx.el.div(
+                                rx.el.span(
+                                    "Discount Applied",
+                                    class_name="text-sm text-green-600",
+                                ),
+                                rx.el.span(
+                                    f"-₹{AppState.coupon_discount_amount}",
+                                    class_name="text-sm font-bold text-green-600",
+                                ),
+                                class_name="flex justify-between items-center mb-2",
+                            ),
+                        ),
                         rx.el.div(
                             rx.el.span(
                                 "Total Amount", class_name="text-base text-gray-600"
@@ -106,11 +166,30 @@ def checkout_page() -> rx.Component:
                         ),
                         class_name="bg-gray-50 rounded-xl p-4 mb-6",
                     ),
-                    rx.el.button(
-                        "Place Order",
-                        on_click=AppState.place_order,
-                        class_name="w-full bg-[#6200EA] text-white py-3.5 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-[#5000CA] transition-all active:scale-95",
+                    rx.cond(
+                        AppState.checkout_payment_method == "UPI",
+                        rx.el.button(
+                            rx.cond(
+                                PaymentState.is_processing,
+                                rx.spinner(size="1", class_name="mr-2"),
+                                rx.icon("credit-card", class_name="w-5 h-5 mr-2"),
+                            ),
+                            rx.cond(
+                                PaymentState.is_processing,
+                                "Processing Payment...",
+                                "Pay Now",
+                            ),
+                            on_click=PaymentState.create_razorpay_order,
+                            disabled=PaymentState.is_processing,
+                            class_name="flex items-center justify-center w-full bg-[#6200EA] text-white py-3.5 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-[#5000CA] transition-all active:scale-95",
+                        ),
+                        rx.el.button(
+                            "Place COD Order",
+                            on_click=AppState.place_order,
+                            class_name="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-gray-800 transition-all active:scale-95",
+                        ),
                     ),
+                    rx.el.div(rx.html(RAZORPAY_SCRIPT)),
                 ),
                 class_name="max-w-2xl mx-auto",
             ),

@@ -50,6 +50,64 @@ def pricing_page() -> rx.Component:
                             ),
                             class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6",
                         ),
+                        rx.el.h3(
+                            "Additional Charges & Taxes",
+                            class_name="text-lg font-bold text-gray-900 mb-4",
+                        ),
+                        rx.el.div(
+                            rx.el.div(
+                                rx.el.label(
+                                    "Platform Fee (₹)",
+                                    class_name="block text-sm font-medium text-gray-700 mb-1",
+                                ),
+                                rx.el.input(
+                                    on_change=AdminState.update_platform_fee,
+                                    type="number",
+                                    class_name="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-[#6200EA] focus:border-[#6200EA]",
+                                    default_value=AdminState.pricing_config[
+                                        "platform_fee"
+                                    ],
+                                ),
+                            ),
+                            rx.el.div(
+                                rx.el.label(
+                                    "GST (%)",
+                                    class_name="block text-sm font-medium text-gray-700 mb-1",
+                                ),
+                                rx.el.input(
+                                    on_change=AdminState.update_gst_percent,
+                                    type="number",
+                                    class_name="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-[#6200EA] focus:border-[#6200EA]",
+                                    default_value=AdminState.pricing_config[
+                                        "gst_percent"
+                                    ],
+                                ),
+                            ),
+                            rx.el.div(
+                                rx.el.label(
+                                    "Surge Pricing Active",
+                                    class_name="block text-sm font-medium text-gray-700 mb-1",
+                                ),
+                                rx.el.div(
+                                    rx.el.label(
+                                        rx.el.input(
+                                            type="checkbox",
+                                            checked=AdminState.pricing_config[
+                                                "is_surge_active"
+                                            ],
+                                            on_change=AdminState.toggle_surge_active,
+                                            class_name="w-5 h-5 text-[#6200EA] rounded focus:ring-[#6200EA] border-gray-300",
+                                        ),
+                                        rx.el.span(
+                                            "Enable Surge Pricing",
+                                            class_name="ml-2 text-sm text-gray-600",
+                                        ),
+                                        class_name="flex items-center mt-2",
+                                    )
+                                ),
+                            ),
+                            class_name="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6",
+                        ),
                         class_name="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6",
                     ),
                     rx.el.div(

@@ -100,6 +100,15 @@ class CouponDict(TypedDict):
     is_active: bool
 
 
+class PricingConfigDict(TypedDict):
+    delivery_base: float
+    delivery_per_km: float
+    surge_multiplier: float
+    platform_fee: float
+    gst_percent: float
+    is_surge_active: bool
+
+
 class UserDict(TypedDict):
     id: str
     name: str
@@ -386,4 +395,12 @@ COUPONS: list[CouponDict] = [
         "is_active": True,
     },
 ]
+PRICING_CONFIG: PricingConfigDict = {
+    "delivery_base": 15.0,
+    "delivery_per_km": 5.0,
+    "surge_multiplier": 1.5,
+    "platform_fee": 5.0,
+    "gst_percent": 5.0,
+    "is_surge_active": False,
+}
 ORDERS: list[OrderDict] = []

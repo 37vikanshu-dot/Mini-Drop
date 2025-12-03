@@ -5,3 +5,4 @@ reflex-google-auth
 supabase
 anthropic
 google-genai
+razorpay

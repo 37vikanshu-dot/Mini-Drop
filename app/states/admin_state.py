@@ -18,12 +18,7 @@ class AdminState(rx.State):
     categories: list[CategoryDict] = []
     orders: list[OrderDict] = []
     riders: list[RiderDict] = []
-    pricing_config: dict = {
-        "delivery_base": 15.0,
-        "delivery_per_km": 5.0,
-        "surge_multiplier": 1.0,
-        "membership_price": 99.0,
-    }
+    pricing_config: data.PricingConfigDict = data.PRICING_CONFIG
     coupons: list[CouponDict] = []
     revenue_stats: list[WeeklyStatDict] = [
         {"day": "Mon", "revenue": 0, "orders": 0},
@@ -195,6 +190,7 @@ class AdminState(rx.State):
     def update_delivery_base(self, value: str):
         try:
             self.pricing_config["delivery_base"] = float(value)
+            data.PRICING_CONFIG["delivery_base"] = float(value)
         except ValueError as e:
             logging.exception(f"Error: {e}")
 
@@ -202,8 +198,32 @@ class AdminState(rx.State):
     def update_surge_multiplier(self, value: str):
         try:
             self.pricing_config["surge_multiplier"] = float(value)
+            data.PRICING_CONFIG["surge_multiplier"] = float(value)
         except ValueError as e:
             logging.exception(f"Error: {e}")
+
+    @rx.event
+    def update_platform_fee(self, value: str):
+        try:
+            val = float(value)
+            self.pricing_config["platform_fee"] = val
+            data.PRICING_CONFIG["platform_fee"] = val
+        except ValueError as e:
+            logging.exception(f"Error: {e}")
+
+    @rx.event
+    def update_gst_percent(self, value: str):
+        try:
+            val = float(value)
+            self.pricing_config["gst_percent"] = val
+            data.PRICING_CONFIG["gst_percent"] = val
+        except ValueError as e:
+            logging.exception(f"Error: {e}")
+
+    @rx.event
+    def toggle_surge_active(self, value: bool):
+        self.pricing_config["is_surge_active"] = value
+        data.PRICING_CONFIG["is_surge_active"] = value
 
     @rx.event
     def set_shop_form_name(self, val: str):

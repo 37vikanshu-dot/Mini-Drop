@@ -6,6 +6,7 @@ from app.data import (
     SavedAddressDict,
     OrderDict,
     OrderItemDict,
+    CouponDict,
 )
 import app.data as data
 from app.states.auth_state import AuthState
@@ -31,6 +32,9 @@ class AppState(rx.State):
     checkout_payment_method: str = "UPI"
     saved_addresses: list[SavedAddressDict] = []
     orders: list[OrderDict] = []
+    promo_code_input: str = ""
+    applied_coupon: CouponDict | None = None
+    coupon_error: str = ""
 
     @rx.event
     async def on_mount(self):
@@ -82,11 +86,50 @@ class AppState(rx.State):
 
     @rx.var
     def delivery_fee(self) -> float:
-        return 15.0 if self.cart_total > 0 else 0.0
+        if self.cart_total <= 0:
+            return 0.0
+        base_fee = data.PRICING_CONFIG.get("delivery_base", 15.0)
+        if data.PRICING_CONFIG.get("is_surge_active", False):
+            return base_fee * data.PRICING_CONFIG.get("surge_multiplier", 1.0)
+        return base_fee
+
+    @rx.var
+    def platform_fee(self) -> float:
+        return (
+            data.PRICING_CONFIG.get("platform_fee", 5.0) if self.cart_total > 0 else 0.0
+        )
+
+    @rx.var
+    def tax_amount(self) -> float:
+        if self.cart_total <= 0:
+            return 0.0
+        taxable_amount = self.cart_total + self.delivery_fee + self.platform_fee
+        gst_pct = data.PRICING_CONFIG.get("gst_percent", 5.0)
+        return round(taxable_amount * gst_pct / 100.0, 2)
+
+    @rx.var
+    def coupon_discount_amount(self) -> float:
+        if not self.applied_coupon:
+            return 0.0
+        discount = 0.0
+        if self.applied_coupon["type"] == "Flat":
+            discount = float(self.applied_coupon["discount"])
+        elif self.applied_coupon["type"] == "Percent":
+            discount = self.cart_total * float(self.applied_coupon["discount"]) / 100.0
+        return min(discount, self.cart_total)
 
     @rx.var
     def cart_grand_total(self) -> float:
-        return self.cart_total + self.delivery_fee
+        if self.cart_total <= 0:
+            return 0.0
+        total = (
+            self.cart_total
+            + self.delivery_fee
+            + self.platform_fee
+            + self.tax_amount
+            - self.coupon_discount_amount
+        )
+        return round(max(total, 0.0), 2)
 
     @rx.var
     def active_order(self) -> OrderDict | None:
@@ -107,6 +150,50 @@ class AppState(rx.State):
         self.checkout_payment_method = method
 
     @rx.event
+    def set_promo_code_input(self, value: str):
+        self.promo_code_input = value
+        self.coupon_error = ""
+
+    @rx.event
+    async def apply_coupon(self):
+        self.coupon_error = ""
+        if not self.promo_code_input:
+            self.coupon_error = "Please enter a code"
+            return
+        db = DatabaseManager()
+        coupons = []
+        if db.supabase:
+            coupons = await db.get_coupons()
+        else:
+            coupons = data.COUPONS
+        code_to_check = self.promo_code_input.strip().upper()
+        coupon = next(
+            (c for c in coupons if str(c["code"]).upper() == code_to_check), None
+        )
+        if not coupon:
+            self.coupon_error = "Invalid coupon code"
+            return
+        is_active = coupon.get("is_active", True)
+        if isinstance(is_active, str):
+            is_active = is_active.lower() == "true"
+        if not is_active:
+            self.coupon_error = "This coupon is no longer active"
+            return
+        min_order = float(coupon.get("min_order", 0))
+        if self.cart_total < min_order:
+            self.coupon_error = f"Minimum order of ₹{min_order} required"
+            return
+        self.applied_coupon = coupon
+        self.promo_code_input = ""
+        return rx.toast(f"Coupon {coupon['code']} applied successfully!")
+
+    @rx.event
+    def remove_coupon(self):
+        self.applied_coupon = None
+        self.coupon_error = ""
+        return rx.toast("Coupon removed")
+
+    @rx.event
     async def place_order(self):
         if not self.checkout_address:
             return rx.window_alert("Please enter a delivery address.")
@@ -122,12 +209,17 @@ class AppState(rx.State):
                 if sid not in shop_items:
                     shop_items[sid] = []
                 shop_items[sid].append(item)
+        total_cart_subtotal = self.cart_total
+        global_discount_amount = self.coupon_discount_amount
         created_order_ids = []
         db = DatabaseManager()
         for shop_id, items in shop_items.items():
             subtotal = sum((i["price"] * i["quantity"] for i in items))
+            shop_discount = 0.0
+            if total_cart_subtotal > 0 and global_discount_amount > 0:
+                shop_discount = subtotal / total_cart_subtotal * global_discount_amount
             delivery = 15.0
-            total = subtotal + delivery
+            total = max(subtotal + delivery - shop_discount, 0.0)
             now = datetime.datetime.now()
             order_id = f"ORD-{random.randint(10000, 99999)}"
             order_data = {
@@ -166,6 +258,7 @@ class AppState(rx.State):
                 data.ORDERS.append(order_data)
                 created_order_ids.append(order_id)
         self.cart = {}
+        self.applied_coupon = None
         if created_order_ids:
             return rx.redirect(f"/tracking/{created_order_ids[0]}")
         return rx.redirect("/")
