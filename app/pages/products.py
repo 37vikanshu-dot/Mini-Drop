@@ -1,20 +1,6 @@
 import reflex as rx
-from app.components.layout import layout
 from app.components.cards import product_card
 from app.states.main_state import AppState
-
-
-def back_button() -> rx.Component:
-    return rx.el.a(
-        rx.el.div(
-            rx.icon("arrow-left", class_name="w-5 h-5 text-gray-700"),
-            rx.el.span(
-                "Back to Shops", class_name="text-sm font-medium text-gray-700 ml-2"
-            ),
-            class_name="flex items-center mb-6 hover:text-[#6200EA] transition-colors cursor-pointer w-fit",
-        ),
-        href="/shops",
-    )
 
 
 def shop_info_badge(icon: str, text: str, color: str = "gray") -> rx.Component:
@@ -44,13 +30,13 @@ def shop_header() -> rx.Component:
                 ),
                 class_name="absolute top-4 right-4",
             ),
-            class_name="h-48 md:h-64 w-full relative overflow-hidden rounded-t-2xl md:rounded-2xl",
+            class_name="h-64 md:h-80 w-full relative overflow-hidden md:rounded-b-3xl",
         ),
         rx.el.div(
             rx.el.div(
                 rx.el.h1(
                     shop["name"],
-                    class_name="text-2xl md:text-3xl font-bold text-gray-900 mb-2",
+                    class_name="text-2xl md:text-4xl font-bold text-gray-900 mb-2",
                 ),
                 rx.el.p(shop["address"], class_name="text-gray-500 text-sm mb-4"),
                 rx.el.div(
@@ -61,9 +47,9 @@ def shop_header() -> rx.Component:
                 ),
                 class_name="flex-1",
             ),
-            class_name="p-6 md:p-8 -mt-10 relative bg-white rounded-t-3xl md:rounded-3xl mx-0 md:mx-6 shadow-sm border border-gray-100 md:-mt-12",
+            class_name="p-6 md:p-8 -mt-12 relative bg-white rounded-t-3xl mx-0 md:mx-8 shadow-lg border border-gray-100",
         ),
-        class_name="mb-8",
+        class_name="mb-8 relative",
     )
 
 
@@ -91,53 +77,84 @@ def products_grid() -> rx.Component:
                 class_name="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200",
             ),
         ),
+        class_name="px-4 md:px-8 pb-24",
+    )
+
+
+def custom_navbar() -> rx.Component:
+    return rx.el.div(
+        rx.el.a(
+            rx.el.div(
+                rx.icon("arrow-left", class_name="w-5 h-5 text-gray-700"),
+                class_name="p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors flex items-center justify-center",
+            ),
+            href="/shops",
+            class_name="pointer-events-auto",
+        ),
+        rx.el.a(
+            rx.el.div(
+                rx.icon("shopping-bag", class_name="w-5 h-5 text-gray-700"),
+                rx.cond(
+                    AppState.cart_count > 0,
+                    rx.el.span(
+                        AppState.cart_count,
+                        class_name="absolute -top-1 -right-1 bg-[#6200EA] text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white",
+                    ),
+                    None,
+                ),
+                class_name="relative p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors flex items-center justify-center",
+            ),
+            href="/cart",
+            class_name="pointer-events-auto",
+        ),
+        class_name="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-4 py-4 pointer-events-none",
     )
 
 
 def products_page() -> rx.Component:
-    return layout(
-        rx.el.div(
-            back_button(),
-            rx.cond(
-                AppState.current_shop,
+    return rx.el.div(
+        custom_navbar(),
+        rx.cond(
+            AppState.current_shop,
+            rx.el.div(
+                shop_header(),
                 rx.el.div(
-                    shop_header(),
-                    products_grid(),
-                    class_name="animate-in fade-in duration-500",
-                ),
-                rx.el.div(
-                    rx.cond(
-                        AppState.shops.length() > 0,
-                        rx.el.div(
-                            rx.icon("store", class_name="w-20 h-20 text-gray-200 mb-4"),
-                            rx.el.h3(
-                                "Shop not found",
-                                class_name="text-xl font-bold text-gray-900 mb-2",
-                            ),
-                            rx.el.p(
-                                "The shop you are looking for might have been removed or is temporarily unavailable.",
-                                class_name="text-gray-500 text-center max-w-md mb-8",
-                            ),
-                            rx.el.a(
-                                rx.el.button(
-                                    "Browse Other Shops",
-                                    class_name="bg-[#6200EA] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#5000CA] transition-all",
-                                ),
-                                href="/shops",
-                            ),
-                            class_name="flex flex-col items-center justify-center py-20",
-                        ),
-                        rx.el.div(
-                            rx.spinner(size="3", class_name="text-[#6200EA]"),
-                            rx.el.p(
-                                "Loading shop details...",
-                                class_name="text-gray-500 mt-4 font-medium animate-pulse",
-                            ),
-                            class_name="flex flex-col items-center justify-center py-32",
-                        ),
-                    )
+                    products_grid(), class_name="max-w-7xl mx-auto animate-in fade-in"
                 ),
             ),
-            class_name="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-        )
+            rx.el.div(
+                rx.cond(
+                    AppState.shops.length() > 0,
+                    rx.el.div(
+                        rx.icon("store", class_name="w-20 h-20 text-gray-200 mb-4"),
+                        rx.el.h3(
+                            "Shop not found",
+                            class_name="text-xl font-bold text-gray-900 mb-2",
+                        ),
+                        rx.el.p(
+                            "The shop you are looking for might have been removed or is temporarily unavailable.",
+                            class_name="text-gray-500 text-center max-w-md mb-8",
+                        ),
+                        rx.el.a(
+                            rx.el.button(
+                                "Browse Other Shops",
+                                class_name="bg-[#6200EA] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[#5000CA] transition-all",
+                            ),
+                            href="/shops",
+                        ),
+                        class_name="flex flex-col items-center justify-center py-32",
+                    ),
+                    rx.el.div(
+                        rx.spinner(size="3", class_name="text-[#6200EA]"),
+                        rx.el.p(
+                            "Loading shop details...",
+                            class_name="text-gray-500 mt-4 font-medium animate-pulse",
+                        ),
+                        class_name="flex flex-col items-center justify-center py-32",
+                    ),
+                ),
+                class_name="pt-24 px-4",
+            ),
+        ),
+        class_name="min-h-screen bg-gray-50 font-['Lora']",
     )
