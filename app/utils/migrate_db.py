@@ -146,6 +146,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'rider_id') THEN
         ALTER TABLE orders ADD COLUMN rider_id TEXT;
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'shops' AND column_name = 'commission_rate') THEN
+        ALTER TABLE shops ADD COLUMN commission_rate DECIMAL(5,2) DEFAULT 10.0;
+    END IF;
 END $$;
 """
 

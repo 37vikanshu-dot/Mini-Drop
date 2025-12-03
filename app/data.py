@@ -22,6 +22,7 @@ class ShopDict(TypedDict):
     image_url: str
     address: str
     is_featured: bool
+    commission_rate: float
 
 
 class ProductDict(TypedDict):

@@ -107,15 +107,23 @@ def checkout_page() -> rx.Component:
                             rx.el.input(
                                 type="radio",
                                 name="payment",
-                                checked=AppState.checkout_payment_method == "UPI",
-                                on_change=lambda: AppState.set_payment_method("UPI"),
-                                class_name="w-4 h-4 text-[#6200EA] focus:ring-[#6200EA]",
+                                checked=False,
+                                disabled=True,
+                                on_click=rx.toast("UPI payments are coming soon!"),
+                                class_name="w-4 h-4 text-gray-300 focus:ring-gray-300 cursor-not-allowed",
                             ),
-                            rx.el.span(
-                                "UPI (Google Pay / PhonePe)",
-                                class_name="ml-3 text-sm font-medium text-gray-900",
+                            rx.el.div(
+                                rx.el.span(
+                                    "UPI (Google Pay / PhonePe)",
+                                    class_name="text-sm font-medium text-gray-400",
+                                ),
+                                rx.el.span(
+                                    "(Coming Soon)",
+                                    class_name="text-xs text-[#6200EA] font-bold ml-2 bg-purple-50 px-2 py-0.5 rounded-full",
+                                ),
+                                class_name="ml-3 flex items-center",
                             ),
-                            class_name="flex items-center p-4 border border-gray-200 rounded-xl mb-3 cursor-pointer bg-white",
+                            class_name="flex items-center p-4 border border-gray-100 rounded-xl mb-3 cursor-not-allowed bg-gray-50 opacity-70",
                         ),
                         rx.el.label(
                             rx.el.input(

@@ -73,7 +73,10 @@ def shop_row(shop: ShopDict) -> rx.Component:
             class_name="px-6 py-4 whitespace-nowrap",
         ),
         rx.el.td(
-            rx.el.span("10%", class_name="text-sm text-gray-600"),
+            rx.el.span(
+                shop.get("commission_rate", 10).to_string() + "%",
+                class_name="text-sm text-gray-600",
+            ),
             class_name="px-6 py-4 whitespace-nowrap",
         ),
         rx.el.td(
@@ -92,7 +95,7 @@ def shop_row(shop: ShopDict) -> rx.Component:
                 ),
                 rx.el.button(
                     rx.icon("trash-2", class_name="w-4 h-4 text-red-500"),
-                    on_click=AdminState.delete_shop(shop["id"]),
+                    on_click=AdminState.confirm_delete_shop(shop["id"]),
                     class_name="p-2 hover:bg-red-50 rounded-lg transition-colors",
                 ),
                 class_name="flex justify-end",
@@ -174,7 +177,40 @@ def shop_dialog() -> rx.Component:
                             type="number",
                             default_value=AdminState.shop_form_commission,
                             on_change=AdminState.set_shop_form_commission,
-                            class_name="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-[#6200EA] focus:border-[#6200EA] mb-6",
+                            class_name="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-[#6200EA] focus:border-[#6200EA] mb-4",
+                        ),
+                    ),
+                    rx.cond(
+                        AdminState.editing_shop_id == 0,
+                        rx.el.div(
+                            rx.el.h4(
+                                "Shop Owner Account",
+                                class_name="font-bold text-gray-900 mb-3 pt-2 border-t",
+                            ),
+                            rx.el.div(
+                                rx.el.label(
+                                    "Owner Email",
+                                    class_name="block text-sm font-medium text-gray-700 mb-1",
+                                ),
+                                rx.el.input(
+                                    type="email",
+                                    placeholder="owner@example.com",
+                                    on_change=AdminState.set_shop_form_email,
+                                    class_name="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-[#6200EA] focus:border-[#6200EA] mb-4",
+                                ),
+                            ),
+                            rx.el.div(
+                                rx.el.label(
+                                    "Password",
+                                    class_name="block text-sm font-medium text-gray-700 mb-1",
+                                ),
+                                rx.el.input(
+                                    type="password",
+                                    placeholder="Enter password",
+                                    on_change=AdminState.set_shop_form_password,
+                                    class_name="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-[#6200EA] focus:border-[#6200EA] mb-4",
+                                ),
+                            ),
                         ),
                     ),
                     rx.el.div(
@@ -197,6 +233,40 @@ def shop_dialog() -> rx.Component:
         ),
         open=AdminState.is_shop_dialog_open,
         on_open_change=AdminState.set_shop_dialog_open,
+    )
+
+
+def delete_confirmation_dialog() -> rx.Component:
+    return rx.radix.primitives.dialog.root(
+        rx.radix.primitives.dialog.portal(
+            rx.radix.primitives.dialog.overlay(
+                class_name="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            ),
+            rx.radix.primitives.dialog.content(
+                rx.radix.primitives.dialog.title(
+                    "Delete Shop?", class_name="text-lg font-bold text-gray-900 mb-2"
+                ),
+                rx.radix.primitives.dialog.description(
+                    "This action is irreversible. All products, orders, and payouts associated with this shop will be permanently deleted.",
+                    class_name="text-sm text-gray-500 mb-6",
+                ),
+                rx.el.div(
+                    rx.el.button(
+                        "Cancel",
+                        on_click=AdminState.cancel_delete_shop,
+                        class_name="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 mr-3",
+                    ),
+                    rx.el.button(
+                        "Delete Everything",
+                        on_click=AdminState.delete_shop,
+                        class_name="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700",
+                    ),
+                    class_name="flex justify-end",
+                ),
+                class_name="fixed left-[50%] top-[50%] z-50 w-[90vw] max-w-md translate-x-[-50%] translate-y-[-50%] bg-white rounded-2xl p-6 shadow-2xl focus:outline-none",
+            ),
+        ),
+        open=AdminState.is_delete_shop_alert_open,
     )
 
 
@@ -249,6 +319,7 @@ def shops_content() -> rx.Component:
                 class_name="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden",
             ),
             shop_dialog(),
+            delete_confirmation_dialog(),
         )
     )
 

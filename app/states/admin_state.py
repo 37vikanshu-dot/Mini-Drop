@@ -9,8 +9,10 @@ from app.data import (
 )
 import app.data as data
 from app.utils.database import DatabaseManager
+from app.utils.auth import hash_password
 import logging
 import random
+import uuid
 
 
 class AdminState(rx.State):
@@ -36,6 +38,11 @@ class AdminState(rx.State):
     shop_form_address: str = ""
     shop_form_image_url: str = ""
     shop_form_commission: str = "10"
+    shop_form_email: str = ""
+    shop_form_password: str = ""
+    is_delete_shop_alert_open: bool = False
+    shop_id_to_delete: int = 0
+    is_clear_orders_alert_open: bool = False
     is_rider_dialog_open: bool = False
     rider_form_name: str = ""
     rider_form_phone: str = ""
@@ -92,6 +99,8 @@ class AdminState(rx.State):
         self.shop_form_address = ""
         self.shop_form_image_url = ""
         self.shop_form_commission = "10"
+        self.shop_form_email = ""
+        self.shop_form_password = ""
         self.is_shop_dialog_open = True
 
     @rx.event
@@ -101,20 +110,61 @@ class AdminState(rx.State):
         self.shop_form_category = shop["category_slug"]
         self.shop_form_address = shop["address"]
         self.shop_form_image_url = shop["image_url"]
-        self.shop_form_commission = "10"
+        self.shop_form_commission = str(shop.get("commission_rate", 10))
+        self.shop_form_email = ""
+        self.shop_form_password = ""
         self.is_shop_dialog_open = True
 
     @rx.event
-    async def delete_shop(self, shop_id: int):
+    def confirm_delete_shop(self, shop_id: int):
+        self.shop_id_to_delete = shop_id
+        self.is_delete_shop_alert_open = True
+
+    @rx.event
+    def cancel_delete_shop(self):
+        self.is_delete_shop_alert_open = False
+        self.shop_id_to_delete = 0
+
+    @rx.event
+    async def delete_shop(self):
+        if self.shop_id_to_delete == 0:
+            return
         db = DatabaseManager()
         if db.supabase:
-            success = await db.delete_shop(shop_id)
+            success = await db.delete_shop(self.shop_id_to_delete)
             if success:
                 await self.fetch_data()
-                return rx.toast("Shop deleted successfully")
+                self.is_delete_shop_alert_open = False
+                return rx.toast("Shop and associated data deleted successfully")
             else:
+                self.is_delete_shop_alert_open = False
                 return rx.toast.error("Failed to delete shop")
         else:
+            self.is_delete_shop_alert_open = False
+            return rx.toast.error("Database connection required")
+
+    @rx.event
+    def confirm_clear_orders(self):
+        self.is_clear_orders_alert_open = True
+
+    @rx.event
+    def cancel_clear_orders(self):
+        self.is_clear_orders_alert_open = False
+
+    @rx.event
+    async def clear_all_orders(self):
+        db = DatabaseManager()
+        if db.supabase:
+            success = await db.delete_all_orders()
+            if success:
+                await self.fetch_data()
+                self.is_clear_orders_alert_open = False
+                return rx.toast("All orders cleared successfully")
+            else:
+                self.is_clear_orders_alert_open = False
+                return rx.toast.error("Failed to clear orders")
+        else:
+            self.is_clear_orders_alert_open = False
             return rx.toast.error("Database connection required")
 
     @rx.event
@@ -128,6 +178,11 @@ class AdminState(rx.State):
     @rx.event
     async def save_shop(self):
         db = DatabaseManager()
+        try:
+            commission = float(self.shop_form_commission)
+        except ValueError as e:
+            logging.exception(f"Invalid commission value: {e}")
+            commission = 10.0
         if self.editing_shop_id == 0:
             new_shop = {
                 "name": self.shop_form_name,
@@ -139,15 +194,30 @@ class AdminState(rx.State):
                 or "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80",
                 "address": self.shop_form_address or "New Address",
                 "is_featured": False,
+                "commission_rate": commission,
             }
-            await db.create_shop(new_shop)
-            rx.toast("Shop created successfully")
+            created_shop = await db.create_shop(new_shop)
+            if created_shop and self.shop_form_email and self.shop_form_password:
+                user_data = {
+                    "id": str(uuid.uuid4()),
+                    "name": f"{self.shop_form_name} Owner",
+                    "email": self.shop_form_email,
+                    "role": "shop_owner",
+                    "password_hash": hash_password(self.shop_form_password),
+                    "shop_id": created_shop["id"],
+                    "phone": "",
+                }
+                await db.create_user(user_data)
+                rx.toast(f"Shop and owner account created for {self.shop_form_email}")
+            else:
+                rx.toast("Shop created successfully")
         else:
             updates = {
                 "name": self.shop_form_name,
                 "category_slug": self.shop_form_category,
                 "address": self.shop_form_address,
                 "image_url": self.shop_form_image_url,
+                "commission_rate": commission,
             }
             await db.update_shop(self.editing_shop_id, updates)
             rx.toast("Shop updated successfully")
@@ -244,6 +314,14 @@ class AdminState(rx.State):
     @rx.event
     def set_shop_form_commission(self, val: str):
         self.shop_form_commission = val
+
+    @rx.event
+    def set_shop_form_email(self, val: str):
+        self.shop_form_email = val
+
+    @rx.event
+    def set_shop_form_password(self, val: str):
+        self.shop_form_password = val
 
     @rx.event
     def set_rider_form_name(self, val: str):

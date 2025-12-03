@@ -29,7 +29,7 @@ class AppState(rx.State):
     user_phone: str = ""
     user_email: str = "guest@example.com"
     checkout_address: str = ""
-    checkout_payment_method: str = "UPI"
+    checkout_payment_method: str = "COD"
     saved_addresses: list[SavedAddressDict] = []
     orders: list[OrderDict] = []
     promo_code_input: str = ""

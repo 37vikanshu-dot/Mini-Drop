@@ -54,12 +54,56 @@ def order_row(order: OrderDict) -> rx.Component:
     )
 
 
+def clear_orders_confirmation() -> rx.Component:
+    return rx.radix.primitives.dialog.root(
+        rx.radix.primitives.dialog.portal(
+            rx.radix.primitives.dialog.overlay(
+                class_name="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            ),
+            rx.radix.primitives.dialog.content(
+                rx.radix.primitives.dialog.title(
+                    "Clear All Orders?",
+                    class_name="text-lg font-bold text-gray-900 mb-2",
+                ),
+                rx.radix.primitives.dialog.description(
+                    "This will permanently delete ALL order history from the database. This action cannot be undone.",
+                    class_name="text-sm text-gray-500 mb-6",
+                ),
+                rx.el.div(
+                    rx.el.button(
+                        "Cancel",
+                        on_click=AdminState.cancel_clear_orders,
+                        class_name="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 mr-3",
+                    ),
+                    rx.el.button(
+                        "Yes, Clear All",
+                        on_click=AdminState.clear_all_orders,
+                        class_name="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700",
+                    ),
+                    class_name="flex justify-end",
+                ),
+                class_name="fixed left-[50%] top-[50%] z-50 w-[90vw] max-w-md translate-x-[-50%] translate-y-[-50%] bg-white rounded-2xl p-6 shadow-2xl focus:outline-none",
+            ),
+        ),
+        open=AdminState.is_clear_orders_alert_open,
+    )
+
+
 def orders_page() -> rx.Component:
     return protected_admin(
         admin_layout(
             rx.el.div(
-                rx.el.h1(
-                    "Manage Orders", class_name="text-2xl font-bold text-gray-900 mb-6"
+                rx.el.div(
+                    rx.el.h1(
+                        "Manage Orders", class_name="text-2xl font-bold text-gray-900"
+                    ),
+                    rx.el.button(
+                        rx.icon("trash-2", class_name="w-4 h-4 mr-2"),
+                        "Clear All History",
+                        on_click=AdminState.confirm_clear_orders,
+                        class_name="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all",
+                    ),
+                    class_name="flex justify-between items-center mb-6",
                 ),
                 rx.el.div(
                     rx.el.table(
@@ -96,6 +140,7 @@ def orders_page() -> rx.Component:
                     ),
                     class_name="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden",
                 ),
+                clear_orders_confirmation(),
             )
         )
     )

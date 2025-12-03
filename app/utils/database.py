@@ -354,6 +354,18 @@ class DatabaseManager:
             logging.exception(f"Error fetching all orders: {e}")
             return []
 
+    async def delete_all_orders(self) -> bool:
+        """Delete all orders and order items."""
+        if not self.supabase:
+            return False
+        try:
+            self.supabase.table("order_items").delete().neq("id", -1).execute()
+            self.supabase.table("orders").delete().neq("id", "xxxxx").execute()
+            return True
+        except Exception as e:
+            logging.exception(f"Error deleting all orders: {e}")
+            return False
+
     async def create_shop(self, shop_data: dict) -> Optional[dict]:
         """Create a new shop."""
         if not self.supabase:
