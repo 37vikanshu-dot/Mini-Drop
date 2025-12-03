@@ -15,7 +15,7 @@ def login_page() -> rx.Component:
                 ),
                 class_name="flex flex-col items-center justify-center min-h-screen bg-gray-50",
             ),
-            rx.script("setTimeout(() => window.location.href = '/', 100)"),
+            on_mount=AuthState.redirect_based_on_role,
         ),
         google_oauth_provider(
             rx.el.div(

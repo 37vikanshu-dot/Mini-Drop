@@ -192,7 +192,7 @@ class AuthState(GoogleAuthState):
             self.user_id_cookie = new_id
             self.error_message = ""
             self.is_checking_auth = False
-            return rx.redirect("/")
+            return AuthState.redirect_based_on_role()
         try:
             response = (
                 supabase.table("users")
@@ -230,7 +230,7 @@ class AuthState(GoogleAuthState):
             self.register_password = ""
             self.register_confirm_password = ""
             self.is_checking_auth = False
-            return rx.redirect("/")
+            return AuthState.redirect_based_on_role()
         except Exception as e:
             logging.exception(f"Registration error: {e}")
             self.error_message = "Registration failed"
